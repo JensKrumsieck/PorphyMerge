@@ -17,16 +17,15 @@ namespace PorphyMerge
                 Console.WriteLine("Enter Path:");
                 path = Console.ReadLine();
             }
-
             else path = args[0];
-            if (!Directory.Exists(path)) return;
+            if (!Directory.Exists(path)) Environment.Exit(1);
 
             //read all json-files
             var Properties = ReadFiles(Directory.GetFiles(path, "*Properties.json"));
 
             //convert properties into csv
             var sb = new StringBuilder();
-            sb.Append(PrintHeaders(Properties.FirstOrDefault()));
+            sb.Append(Print(Properties.FirstOrDefault(), true));
             foreach (var s in Properties) sb.Append(Print(s));
             using var sv = new StreamWriter(path + "\\porphymerge.csv");
             sv.Write(sb.ToString());
@@ -37,48 +36,45 @@ namespace PorphyMerge
         /// </summary>
         /// <param name="files"></param>
         /// <returns></returns>
-        static IEnumerable<KeyValuePair<string, Dictionary<string, IEnumerable<Property>>>> ReadFiles(IEnumerable<string> files)
-        {
-            foreach (var file in files)
-                yield return new KeyValuePair<string, Dictionary<string, IEnumerable<Property>>>(file.Split('\\').Last().Split('_').First(), JsonSerializer.Deserialize(File.ReadAllText(file), typeof(Dictionary<string, IEnumerable<Property>>)) as Dictionary<string, IEnumerable<Property>>);
-        }
+        static IEnumerable<KeyValuePair<string, Dictionary<string, IEnumerable<Property>>>> ReadFiles(IEnumerable<string> files) =>
+            from file in files
+            select new KeyValuePair<string, Dictionary<string, IEnumerable<Property>>>
+                (file.Split('\\').Last().Split('_').First(),
+                JsonSerializer.Deserialize(File.ReadAllText(file), typeof(Dictionary<string, IEnumerable<Property>>))
+                    as Dictionary<string, IEnumerable<Property>>);
+
+
+        /// <summary>
+        /// Prints Property Value
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns></returns>
+        static string PrintValue(Property input) => $"{input.Value.Split(' ').First()};";
+
+        /// <summary>
+        /// Prints Property Header
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns></returns>
+        static string PrintHeader(Property input) => $"{input.Name};";
 
         /// <summary>
         /// Prints a CSV Line
         /// </summary>
         /// <param name="input"></param>
         /// <returns></returns>
-        static string Print(KeyValuePair<string, Dictionary<string, IEnumerable<Property>>> input)
+        static string Print(KeyValuePair<string, Dictionary<string, IEnumerable<Property>>> input, bool headers = false)
         {
-            var sb = new StringBuilder();
-            sb.Append(input.Key + ";");
+            var output = $"{input.Key};";
             if (input.Value.ContainsKey("Simulation"))
             {
-                foreach (Property par in input.Value["Simulation"].OrderBy(s => !s.Name.Contains("percentage"))) sb.Append(par.Value.Split(' ').First() + ";");
+                foreach (Property par in input.Value["Simulation"].OrderBy(s => !s.Name.Contains("percentage"))) output += headers ? PrintHeader(par) : PrintValue(par);
                 //Append oop distortion
-                sb.Append(input.Value["Parameter"].FirstOrDefault().Value.Split(' ').First());
+                var oop = input.Value["Parameter"].FirstOrDefault();
+                output += headers ? PrintHeader(oop) : PrintValue(oop); 
             }
-            sb.Append("\n");
-            return sb.ToString();
-        }
-
-        /// <summary>
-        /// Prints CSV Headers
-        /// </summary>
-        /// <param name="input"></param>
-        /// <returns></returns>
-        static string PrintHeaders(KeyValuePair<string, Dictionary<string, IEnumerable<Property>>> input)
-        {
-            var sb = new StringBuilder();
-            sb.Append("Name;");
-            if (input.Value.ContainsKey("Simulation"))
-            {
-                foreach (Property par in input.Value["Simulation"].OrderBy(s => !s.Name.Contains("percentage"))) sb.Append(par.Name + ";");
-                //Append oop distortion
-                sb.Append(input.Value["Parameter"].FirstOrDefault().Name);
-            }
-            sb.Append("\n");
-            return sb.ToString();
+            output += "\n";
+            return output;
         }
     }
 }
