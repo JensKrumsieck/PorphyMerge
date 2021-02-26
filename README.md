@@ -1,3 +1,5 @@
+## Obsoleted - This Feature is now Part of PorphyStruct
+
 ![logo](https://github.com/JensKrumsieck/PorphyMerge/blob/master/PorphyMerge/PorphyMerge.png?raw=true)
 # PorphyMerge
 PorphyMerge is just a simple Console-App to merge all [PorphyStruct](https://github.com/JensKrumsieck/PorphyStruct)-Properties.json 
